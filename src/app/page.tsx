@@ -1,65 +1,115 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { useEffect, useCallback } from 'react';
+import dynamic from 'next/dynamic';
+import useEditorStore from '@/store/useEditorStore';
+import TopBar from '@/components/editor/TopBar';
+import LeftSidebar from '@/components/editor/LeftSidebar';
+import RightSidebar from '@/components/editor/RightSidebar';
+import SceneRail from '@/components/editor/SceneRail';
+
+const RugbyCanvas = dynamic(() => import('@/components/editor/canvas/RugbyCanvas'), { ssr: false });
+
+export default function EditorPage() {
+  const {
+    loadFromStorage,
+    scenes,
+    currentSceneId,
+    projectName,
+    undo,
+    redo,
+    selectedActorId,
+    selectedArrowId,
+    selectedZoneId,
+    deleteActor,
+    deletePlayArrow,
+    deleteZone,
+    isPlaying,
+    nextScene,
+    setIsPlaying,
+  } = useEditorStore();
+
+  // Load saved state once on mount
+  useEffect(() => {
+    loadFromStorage();
+  }, [loadFromStorage]);
+
+  // Autosave whenever relevant state changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem(
+        'rugby-editor',
+        JSON.stringify({ projectName, scenes, currentSceneId })
+      );
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [scenes, currentSceneId, projectName]);
+
+  // Playback timer: advance to next scene after each scene's duration
+  useEffect(() => {
+    if (!isPlaying) return;
+    const currentScene = scenes.find((s) => s.id === currentSceneId);
+    const duration = currentScene?.duration ?? 1500;
+    const timer = setTimeout(() => {
+      const hasNext = nextScene();
+      if (!hasNext) setIsPlaying(false);
+    }, duration);
+    return () => clearTimeout(timer);
+  }, [isPlaying, currentSceneId, scenes, nextScene, setIsPlaying]);
+
+  // Global keyboard shortcuts
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      const meta = e.metaKey || e.ctrlKey;
+      const target = e.target as HTMLElement;
+      const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+
+      if (meta && e.key === 'z' && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      }
+      if ((meta && e.shiftKey && e.key === 'z') || (meta && e.key === 'y')) {
+        e.preventDefault();
+        redo();
+      }
+      // Delete selected actor, arrow, or zone
+      if (!isInput && (e.key === 'Delete' || e.key === 'Backspace')) {
+        if (selectedActorId) { e.preventDefault(); deleteActor(selectedActorId); }
+        else if (selectedArrowId) { e.preventDefault(); deletePlayArrow(selectedArrowId); }
+        else if (selectedZoneId) { e.preventDefault(); deleteZone(selectedZoneId); }
+      }
+      // Escape: deselect + cancel drawing
+      if (e.key === 'Escape') {
+        useEditorStore.getState().setSelectedActor(null);
+        useEditorStore.getState().setSelectedArrow(null);
+        useEditorStore.getState().setSelectedZone(null);
+        useEditorStore.getState().setSelectedTool('select');
+      }
+      // Space: toggle play
+      if (!isInput && e.key === ' ') {
+        e.preventDefault();
+        if (scenes.length > 1) setIsPlaying(!isPlaying);
+      }
+    },
+    [undo, redo, selectedActorId, selectedArrowId, selectedZoneId, deleteActor, deletePlayArrow, deleteZone, isPlaying, setIsPlaying, scenes]
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="flex flex-col h-screen bg-zinc-950 text-zinc-100 overflow-hidden select-none">
+      <TopBar />
+      <div className="flex flex-1 overflow-hidden">
+        <LeftSidebar />
+        <main className="flex-1 overflow-hidden bg-zinc-950">
+          <RugbyCanvas />
+        </main>
+        <RightSidebar />
+      </div>
+      <SceneRail />
     </div>
   );
 }
