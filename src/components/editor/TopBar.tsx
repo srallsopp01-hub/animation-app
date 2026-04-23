@@ -7,10 +7,10 @@ interface TopBarProps {
   onOpenShare: () => void;
 }
 
-const PALETTE_SWATCHES: { value: 'dark' | 'navy' | 'light'; color: string; label: string }[] = [
-  { value: 'dark',  color: '#f7b500', label: 'Dark · Gold' },
-  { value: 'navy',  color: '#16a34a', label: 'Navy · Green' },
-  { value: 'light', color: '#d97706', label: 'Light · Amber' },
+const PALETTE_SWATCHES: { value: 'dark' | 'navy' | 'light'; color: string }[] = [
+  { value: 'dark',  color: '#f7b500' },
+  { value: 'navy',  color: '#16a34a' },
+  { value: 'light', color: '#d97706' },
 ];
 
 export default function TopBar({ onOpenExport, onOpenShare }: TopBarProps) {
@@ -20,195 +20,194 @@ export default function TopBar({ onOpenExport, onOpenShare }: TopBarProps) {
     showPlayerNames, setShowPlayerNames,
     palette, setPalette,
     scenes, currentSceneId,
+    projectName,
   } = useEditorStore();
 
   const currentSceneIndex = scenes.findIndex((s) => s.id === currentSceneId);
-  const currentScene = scenes[currentSceneIndex];
+  const total = scenes.length;
+  const totalMs = scenes.reduce((sum, s) => sum + s.duration, 0);
 
   return (
     <header
-      className="h-14 flex items-center shrink-0 z-10 border-b"
-      style={{ background: 'var(--bg-elev)', borderColor: 'var(--border)' }}
+      className="shrink-0 flex items-stretch z-10 border-b"
+      style={{ background: 'var(--bg-elev)', borderColor: 'var(--border)', height: 60 }}
     >
-      {/* 1. Wordmark tile */}
+      {/* ── Wordmark ─────────────────────────────────────────────────────────── */}
       <div
-        className="w-14 h-14 flex items-center justify-center shrink-0 text-[32px] font-bold select-none"
-        style={{
-          background: 'var(--accent)',
-          color: '#0a0a0a',
-          fontFamily: 'var(--font-oswald), Oswald, sans-serif',
-          letterSpacing: '-0.04em',
-        }}
+        className="w-[60px] shrink-0 flex flex-col items-center justify-center select-none border-r"
+        style={{ background: 'var(--accent)', borderColor: 'transparent' }}
       >
-        P
+        <span
+          className="text-[28px] font-bold leading-none"
+          style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: '#0a0a0a', letterSpacing: '-0.04em' }}
+        >
+          P
+        </span>
+        <span
+          className="text-[7px] font-mono font-bold tracking-[0.18em] uppercase leading-none mt-0.5"
+          style={{ color: '#0a0a0a', opacity: 0.55 }}
+        >
+          BOARD
+        </span>
       </div>
 
-      {/* 2. Match card */}
-      <div className="flex items-center gap-3 px-4 border-r h-full" style={{ borderColor: 'var(--border)' }}>
-        {/* LIVE pulse */}
+      {/* ── Brand + label ─────────────────────────────────────────────────── */}
+      <div className="flex flex-col justify-center pl-3 pr-4 border-r" style={{ borderColor: 'var(--border)' }}>
+        <span
+          className="text-[17px] font-bold uppercase leading-tight"
+          style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--text)', letterSpacing: '0.04em' }}
+        >
+          PHASEBOARD
+        </span>
+        <span
+          className="text-[8px] font-mono font-bold tracking-[0.22em] uppercase"
+          style={{ color: 'var(--accent)' }}
+        >
+          BROADCAST
+        </span>
+      </div>
+
+      {/* ── Match card ─────────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-3 px-4 border-r" style={{ borderColor: 'var(--border)' }}>
+        {/* IRE */}
         <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-sm bg-red-500 animate-pulse inline-block" />
-          <span
-            className="text-[10px] font-mono font-bold tracking-[0.18em] uppercase"
-            style={{ color: '#ef4444' }}
-          >
-            LIVE ANALYSIS
-          </span>
-        </div>
-        {/* Score */}
-        <div className="flex items-center gap-1.5">
-          <span
-            className="text-xl font-bold uppercase"
-            style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--text)' }}
-          >
+          <div className="w-5 h-5 rounded-sm flex items-center justify-center" style={{ background: '#22c55e' }}>
+            <span className="text-[8px] font-bold text-white leading-none">IE</span>
+          </div>
+          <span className="text-sm font-bold uppercase" style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--text)' }}>
             IRE
           </span>
-          <span
-            className="text-xl font-bold"
-            style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--accent)' }}
-          >
-            22 – 19
-          </span>
-          <span
-            className="text-xl font-bold uppercase"
-            style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--text-dim)' }}
-          >
+        </div>
+        <span className="text-sm font-medium" style={{ color: 'var(--text-mute)' }}>VS</span>
+        {/* NZL */}
+        <div className="flex items-center gap-1.5">
+          <div className="w-5 h-5 rounded-sm flex items-center justify-center" style={{ background: '#374151' }}>
+            <span className="text-[8px] font-bold text-white leading-none">NZ</span>
+          </div>
+          <span className="text-sm font-bold uppercase" style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--text-mute)' }}>
             NZL
           </span>
         </div>
-        {/* Pill */}
-        <div
-          className="flex items-center px-2 py-0.5 rounded-full border text-[10px] font-mono font-medium tracking-[0.18em] uppercase whitespace-nowrap"
-          style={{ borderColor: 'var(--border-strong)', color: 'var(--text-mute)' }}
-        >
-          Q3 · 58:14 · Aviva
+      </div>
+
+      {/* ── Play title (center flex) ───────────────────────────────────────── */}
+      <div className="flex-1 flex flex-col justify-center px-4 min-w-0">
+        <div className="flex items-baseline gap-3 min-w-0">
+          <span
+            className="text-base font-bold uppercase truncate leading-tight"
+            style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--text)', letterSpacing: '0.05em' }}
+          >
+            {projectName ?? 'LINEOUT STRIKE — OFF THE TOP'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 mt-0.5">
+          <span className="text-[9px] font-mono uppercase tracking-[0.18em]" style={{ color: 'var(--text-mute)' }}>
+            PLAYBOOK · {total} PHASES · {(totalMs / 1000).toFixed(1)} SEC
+          </span>
         </div>
       </div>
 
-      {/* 3. Play title */}
-      <div className="flex-1 flex items-center gap-3 px-4 min-w-0">
-        <span className="text-[10px] font-mono font-medium tracking-[0.18em] uppercase" style={{ color: 'var(--text-mute)' }}>
-          Play
-        </span>
-        <span
-          className="text-base font-semibold uppercase truncate"
-          style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--text)', letterSpacing: '0.02em' }}
-        >
-          {currentScene?.name ?? 'Lineout Strike · Off the Top – 9'}
-        </span>
-        <div
-          className="shrink-0 flex items-center px-2 py-0.5 rounded border text-[10px] font-mono font-medium tracking-[0.18em] uppercase"
-          style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
-        >
-          PLAYBOOK · IRE-L04
-        </div>
-      </div>
-
-      {/* Right actions */}
-      <div className="flex items-center gap-2 px-3 shrink-0">
-        {/* Undo/Redo */}
+      {/* ── Utility toggles ─────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-1.5 px-3 border-l" style={{ borderColor: 'var(--border)' }}>
         <button
-          onClick={undo}
-          disabled={past.length === 0}
+          onClick={undo} disabled={past.length === 0}
           title="Undo (Ctrl+Z)"
-          className="w-7 h-7 flex items-center justify-center rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-7 h-7 flex items-center justify-center rounded transition-colors disabled:opacity-30"
           style={{ color: 'var(--text-mute)' }}
         >
           <UndoIcon />
         </button>
         <button
-          onClick={redo}
-          disabled={future.length === 0}
+          onClick={redo} disabled={future.length === 0}
           title="Redo (Ctrl+Shift+Z)"
-          className="w-7 h-7 flex items-center justify-center rounded transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="w-7 h-7 flex items-center justify-center rounded transition-colors disabled:opacity-30"
           style={{ color: 'var(--text-mute)' }}
         >
           <RedoIcon />
         </button>
-
-        <div className="w-px h-5 mx-1" style={{ background: 'var(--border-strong)' }} />
-
-        {/* Paths toggle */}
-        <button
-          onClick={() => setShowMovementArrows(!showMovementArrows)}
-          title="Toggle movement paths"
-          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono font-medium tracking-[0.18em] uppercase transition-all"
-          style={{
-            background: showMovementArrows ? 'var(--accent)' : 'var(--bg-elev-2)',
-            color: showMovementArrows ? '#0a0a0a' : 'var(--text-mute)',
-            border: `1px solid ${showMovementArrows ? 'var(--accent)' : 'var(--border)'}`,
-          }}
-        >
+        <div className="w-px h-4 mx-0.5" style={{ background: 'var(--border-strong)' }} />
+        <ToggleBtn active={showMovementArrows} onClick={() => setShowMovementArrows(!showMovementArrows)}>
           Paths
-        </button>
-
-        {/* Names toggle */}
-        <button
-          onClick={() => setShowPlayerNames(!showPlayerNames)}
-          title="Toggle player names"
-          className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-mono font-medium tracking-[0.18em] uppercase transition-all"
-          style={{
-            background: showPlayerNames ? 'var(--accent)' : 'var(--bg-elev-2)',
-            color: showPlayerNames ? '#0a0a0a' : 'var(--text-mute)',
-            border: `1px solid ${showPlayerNames ? 'var(--accent)' : 'var(--border)'}`,
-          }}
-        >
+        </ToggleBtn>
+        <ToggleBtn active={showPlayerNames} onClick={() => setShowPlayerNames(!showPlayerNames)}>
           Names
-        </button>
-
-        <div className="w-px h-5 mx-1" style={{ background: 'var(--border-strong)' }} />
-
+        </ToggleBtn>
+        <div className="w-px h-4 mx-0.5" style={{ background: 'var(--border-strong)' }} />
         {/* Palette swatches */}
-        <div className="flex items-center gap-1.5">
-          {PALETTE_SWATCHES.map((sw) => (
-            <button
-              key={sw.value}
-              onClick={() => setPalette(sw.value)}
-              title={sw.label}
-              className="w-5 h-5 rounded-full transition-all"
-              style={{
-                background: sw.color,
-                outline: palette === sw.value ? `2px solid var(--text)` : '2px solid transparent',
-                outlineOffset: '2px',
-              }}
-            />
-          ))}
-        </div>
+        {PALETTE_SWATCHES.map((sw) => (
+          <button
+            key={sw.value}
+            onClick={() => setPalette(sw.value)}
+            className="w-4 h-4 rounded-full transition-all"
+            style={{
+              background: sw.color,
+              outline: palette === sw.value ? `2px solid var(--text)` : '2px solid transparent',
+              outlineOffset: '2px',
+            }}
+          />
+        ))}
+      </div>
 
-        <div className="w-px h-5 mx-1" style={{ background: 'var(--border-strong)' }} />
+      {/* ── Total duration display ──────────────────────────────────────────── */}
+      <div className="flex flex-col justify-center items-end px-4 border-l shrink-0" style={{ borderColor: 'var(--border)' }}>
+        <span
+          className="text-[22px] font-bold leading-none tabular-nums"
+          style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--accent)', letterSpacing: '0.02em' }}
+        >
+          {String(total).padStart(2, '0')}
+        </span>
+        <span className="text-[7px] font-mono tracking-[0.18em] uppercase leading-none mt-0.5" style={{ color: 'var(--text-mute)' }}>
+          PHASES · {(totalMs / 1000).toFixed(1)}S
+        </span>
+      </div>
 
-        {/* Share */}
+      {/* ── Export / Share ───────────────────────────────────────────────────── */}
+      <div className="flex items-center gap-2 px-3 border-l" style={{ borderColor: 'var(--border)' }}>
         <button
           onClick={onOpenShare}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm border transition-colors"
-          style={{ borderColor: 'var(--border-strong)', color: 'var(--text-dim)' }}
+          className="px-3 h-8 rounded text-[11px] font-mono font-medium tracking-[0.12em] uppercase transition-colors border"
+          style={{ borderColor: 'var(--border-strong)', color: 'var(--text-mute)' }}
         >
-          ↗ Share
+          SHARE
         </button>
-
-        {/* Export */}
         <button
           onClick={onOpenExport}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors"
+          className="px-4 h-8 rounded text-[11px] font-mono font-bold tracking-[0.12em] uppercase transition-colors"
           style={{ background: 'var(--accent)', color: '#0a0a0a' }}
         >
-          Export
+          EXPORT
         </button>
       </div>
     </header>
   );
 }
 
+function ToggleBtn({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-2 py-1 rounded text-[9px] font-mono font-medium tracking-[0.14em] uppercase transition-all"
+      style={{
+        background: active ? 'var(--accent)' : 'transparent',
+        color: active ? '#0a0a0a' : 'var(--text-mute)',
+        border: `1px solid ${active ? 'var(--accent)' : 'var(--border)'}`,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
 function UndoIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
       <path d="M9 14 4 9l5-5" /><path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
     </svg>
   );
 }
 function RedoIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
       <path d="m15 14 5-5-5-5" /><path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
     </svg>
   );
