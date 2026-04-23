@@ -1,0 +1,51 @@
+/* Broadcast palette tokens — three variants sharing same structure */
+
+const PALETTES = {
+  dark: {
+    name: 'Dark · IRE gold',
+    bg: '#070a12', bgElev: '#0a0f1c', bgElev2: '#0d1426',
+    border: '#1a2238', borderStrong: '#2a3352',
+    text: '#f4f5fa', textDim: '#cfd3e0', textMute: '#8a91a8',
+    accent: '#f7b500', accentHot: '#fde047',
+    home: '#f7b500', homeIsLight: true,
+    away: '#1a1d2b',
+    ball: '#fde047',
+    arrowRun: '#ffffff',
+    arrowPass: 'rgba(255,255,255,0.85)',
+    arrowKick: '#fde047',
+    danger: '#e11d48',
+    pitchTheme: 'dark',
+  },
+  navy: {
+    name: 'Navy · IRE green',
+    bg: '#04111a', bgElev: '#08213a', bgElev2: '#0a2a49',
+    border: '#0f3a5a', borderStrong: '#1a4d73',
+    text: '#ffffff', textDim: '#c8d8e6', textMute: '#7a9cb5',
+    accent: '#16a34a', accentHot: '#22c55e',
+    home: '#16a34a', homeIsLight: false,
+    away: '#111827',
+    ball: '#f9fafb',
+    arrowRun: '#ffffff',
+    arrowPass: 'rgba(255,255,255,0.85)',
+    arrowKick: '#22c55e',
+    danger: '#f87171',
+    pitchTheme: 'navy',
+  },
+  light: {
+    name: 'Stadium light',
+    bg: '#f6f7f9', bgElev: '#ffffff', bgElev2: '#eef0f4',
+    border: '#d9dde3', borderStrong: '#b6bcc7',
+    text: '#0a0e1a', textDim: '#30384a', textMute: '#6b7380',
+    accent: '#d97706', accentHot: '#f59e0b',
+    home: '#1d4ed8', homeIsLight: false,
+    away: '#111827',
+    ball: '#dc2626',
+    arrowRun: '#0a0e1a',
+    arrowPass: 'rgba(10,14,26,0.7)',
+    arrowKick: '#d97706',
+    danger: '#dc2626',
+    pitchTheme: 'light',
+  },
+};
+
+Object.assign(window, { PALETTES });

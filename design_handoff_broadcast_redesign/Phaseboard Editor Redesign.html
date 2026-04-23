@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Phaseboard Editor — Design Handoff</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,600;0,700;1,400&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;0,9..144,900;1,9..144,400&display=swap" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; background: #111318; }
+    #root { width: 100%; height: 100%; }
+
+    button { font-family: inherit; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.3; }
+    }
+
+    /* Loading screen */
+    #loading {
+      position: fixed; inset: 0; background: #111318;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 16px; z-index: 9999;
+      font-family: 'JetBrains Mono', monospace;
+      color: #484f58; font-size: 12px; letter-spacing: 0.18em; text-transform: uppercase;
+    }
+    #loading.hidden { display: none; }
+    .load-dot {
+      display: inline-block; animation: pulse 1.2s ease-in-out infinite;
+    }
+    .load-dot:nth-child(2) { animation-delay: 0.2s; }
+    .load-dot:nth-child(3) { animation-delay: 0.4s; }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div style="font-size: 28px; color: #f7b500; font-family: 'Oswald', sans-serif; letter-spacing: 0.06em;">PHASEBOARD</div>
+  <div>Loading design canvas<span class="load-dot">.</span><span class="load-dot">.</span><span class="load-dot">.</span></div>
+</div>
+
+<div id="root"></div>
+
+<!-- React + Babel Standalone -->
+<script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<!-- Design system source files — order matters -->
+<script type="text/babel" src="palettes.jsx"></script>
+<script type="text/babel" src="data.jsx"></script>
+<script type="text/babel" src="pitch.jsx"></script>
+<script type="text/babel" src="broadcast-pitch.jsx"></script>
+<script type="text/babel" src="broadcast-modals.jsx"></script>
+<script type="text/babel" src="broadcast-mobile.jsx"></script>
+<script type="text/babel" src="broadcast-app.jsx"></script>
+<script type="text/babel" src="studio.jsx"></script>
+<script type="text/babel" src="chalk.jsx"></script>
+<script type="text/babel" src="broadcast.jsx"></script>
+<script type="text/babel" src="design-canvas.jsx"></script>
+
+<!-- Root app: canvas with all variations -->
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+/*
+  DESIGN CANVAS LAYOUT
+  ─────────────────────────────────────────────────────────────────────────
+  Row 0 (y=0):      Broadcast — full interactive editor (1440×900)
+  Row 1 (y=1060):   Studio — dark tactical (1440×900)
+  Row 2 (y=2120):   Chalk — editorial (1440×900)
+  Row 3 (y=3180):   Static Broadcast — reference (1440×900)
+  Sidebar col:       Mobile companion (390×844) at x=1520 aligned to row 0
+  Sidebar-2:         Export, Share, Roster modals at x=1520 y=1060
+  ─────────────────────────────────────────────────────────────────────────
+  All positioned absolutely inside the DesignCanvas transform container.
+*/
+
+/* Modal demo wrapper — shows all 3 modals stacked */
+function ModalShowcase({ p }) {
+  const [modal, setModal] = useState('export');
+  const [selectedN, setSelectedN] = useState(8);
+  const mono = { fontFamily: '"JetBrains Mono",monospace', fontSize: 9, letterSpacing: '0.14em', textTransform: 'uppercase' };
+
+  const modals = { export: ExportModal, share: ShareModal, roster: RosterModal };
+  const ModalComp = modals[modal];
+
+  return (
+    <div style={{ width: 700, background: p.bg, border: `1px solid ${p.border}`, position: 'relative', overflow: 'hidden' }}>
+      {/* Tab bar */}
+      <div style={{ display: 'flex', borderBottom: `1px solid ${p.border}`, background: p.bgElev }}>
+        {Object.keys(modals).map(k => (
+          <button key={k} onClick={() => setModal(k)} style={{
+            padding: '8px 16px', background: 'transparent', border: 'none',
+            borderBottom: `2px solid ${modal === k ? p.accent : 'transparent'}`,
+            color: modal === k ? p.accent : p.textMute, cursor: 'pointer', ...mono, fontSize: 9,
+          }}>{k.toUpperCase()}</button>
+        ))}
+        <div style={{ flex: 1 }} />
+        <span style={{ ...mono, color: p.textDim || '#4d5566', fontSize: 8, alignSelf: 'center', marginRight: 12 }}>Modal Components</span>
+      </div>
+
+      {/* Modal rendered inline (no overlay) */}
+      <div style={{ height: 500, position: 'relative', background: p.bg }}>
+        <div style={{ position: 'absolute', inset: 0, display: 'grid', placeItems: 'center', overflow: 'auto' }}>
+          <div style={{ transform: 'scale(0.85)', transformOrigin: 'top center' }}>
+            {modal === 'roster'
+              ? <RosterModal p={p} onClose={() => {}} selectedN={selectedN} setSelectedN={setSelectedN} onBall={8} />
+              : <ModalComp p={p} onClose={() => {}} />}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DesignRoot() {
+  const [ready, setReady] = useState(false);
+  const darkPalette = PALETTES.dark;
+
+  useEffect(() => {
+    /* Small delay so Babel finishes transpiling everything */
+    setTimeout(() => {
+      document.getElementById('loading').classList.add('hidden');
+      setReady(true);
+    }, 400);
+  }, []);
+
+  if (!ready) return null;
+
+  return (
+    <DesignCanvas>
+      {/* ── Row 0: Broadcast interactive ── */}
+      <DCSection title="01 · Broadcast — Interactive Editor" x={0} y={0}>
+        <DCArtboard label="Broadcast App · Dark Palette" w={1440} h={900}
+          note="Full interactive editor. Phase timeline, modals, pitch, on-ball panel. Try clicking phases and palette swatches.">
+          <BroadcastApp />
+        </DCArtboard>
+      </DCSection>
+
+      {/* ── Mobile companion (right of broadcast) ── */}
+      <DCSection title="Mobile Companion" x={1520} y={0}>
+        <DCArtboard label="Phone · 390×844 · Dark" w={430} h={924}
+          note="390×844 iPhone form factor. Phase strip, pitch, transport, coach cue.">
+          <div style={{ background: '#111', padding: 20, display: 'grid', placeItems: 'center', width: 430, height: 924 }}>
+            <BroadcastMobile paletteKey="dark" />
+          </div>
+        </DCArtboard>
+        <DCArtboard label="Phone · 390×844 · Navy" w={430} h={924}
+          note="Navy/green palette variant.">
+          <div style={{ background: '#111', padding: 20, display: 'grid', placeItems: 'center', width: 430, height: 924 }}>
+            <BroadcastMobile paletteKey="navy" />
+          </div>
+        </DCArtboard>
+      </DCSection>
+
+      {/* ── Row 1: Studio dark tactical ── */}
+      <DCSection title="02 · Studio — Dark Tactical" x={0} y={1060}>
+        <DCArtboard label="Studio App · 1440×900" w={1440} h={900}
+          note="Studio variant. Cyan accent, IBM Plex Sans, darker pitch. Same data model, different aesthetic.">
+          <StudioApp />
+        </DCArtboard>
+      </DCSection>
+
+      {/* ── Modals (right of studio) ── */}
+      <DCSection title="Modal Components · Dark Palette" x={1520} y={1060}>
+        <DCArtboard label="Export / Share / Roster Modals" w={700} h={568}
+          note="Use tabs to switch between modal types. These are rendered inline at 85% scale.">
+          <ModalShowcase p={PALETTES.dark} />
+        </DCArtboard>
+      </DCSection>
+
+      {/* ── Row 2: Chalk editorial ── */}
+      <DCSection title="03 · Chalk — Editorial Playbook" x={0} y={2120}>
+        <DCArtboard label="Chalk App · 1440×900" w={1440} h={900}
+          note="Editorial / print-inspired. Cream parchment, Fraunces serif, dark ink. Same functionality.">
+          <ChalkApp />
+        </DCArtboard>
+      </DCSection>
+
+      {/* ── Row 3: Static Broadcast reference ── */}
+      <DCSection title="04 · Broadcast Static — Reference" x={0} y={3180}>
+        <DCArtboard label="Broadcast Static · 1440×900" w={1440} h={900}
+          note="Static reference version of the broadcast look. Includes palette switcher (dark/navy/light). Uses BroadcastPitch renderer.">
+          <BroadcastStatic />
+        </DCArtboard>
+      </DCSection>
+
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<DesignRoot />);
+</script>
+</body>
+</html>
