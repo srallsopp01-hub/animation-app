@@ -1,12 +1,15 @@
 'use client';
 
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import dynamic from 'next/dynamic';
 import useEditorStore from '@/store/useEditorStore';
 import TopBar from '@/components/editor/TopBar';
 import LeftSidebar from '@/components/editor/LeftSidebar';
 import RightSidebar from '@/components/editor/RightSidebar';
 import SceneRail from '@/components/editor/SceneRail';
+import ExportModal from '@/components/editor/modals/ExportModal';
+import ShareModal from '@/components/editor/modals/ShareModal';
+import RosterModal from '@/components/editor/modals/RosterModal';
 
 const RugbyCanvas = dynamic(() => import('@/components/editor/canvas/RugbyCanvas'), { ssr: false });
 
@@ -27,12 +30,22 @@ export default function EditorPage() {
     isPlaying,
     nextScene,
     setIsPlaying,
+    palette,
   } = useEditorStore();
 
-  // Load saved state once on mount
+  const [exportOpen, setExportOpen] = useState(false);
+  const [shareOpen, setShareOpen]   = useState(false);
+  const [rosterOpen, setRosterOpen] = useState(false);
+
+  // Load saved state once on mount + apply palette
   useEffect(() => {
     loadFromStorage();
   }, [loadFromStorage]);
+
+  // Keep html data-palette attribute in sync with store palette
+  useEffect(() => {
+    document.documentElement.setAttribute('data-palette', palette);
+  }, [palette]);
 
   // Autosave whenever relevant state changes
   useEffect(() => {
@@ -78,12 +91,15 @@ export default function EditorPage() {
         else if (selectedArrowId) { e.preventDefault(); deletePlayArrow(selectedArrowId); }
         else if (selectedZoneId) { e.preventDefault(); deleteZone(selectedZoneId); }
       }
-      // Escape: deselect + cancel drawing
+      // Escape: deselect + cancel drawing + close modals
       if (e.key === 'Escape') {
         useEditorStore.getState().setSelectedActor(null);
         useEditorStore.getState().setSelectedArrow(null);
         useEditorStore.getState().setSelectedZone(null);
         useEditorStore.getState().setSelectedTool('select');
+        setExportOpen(false);
+        setShareOpen(false);
+        setRosterOpen(false);
       }
       // Space: toggle play
       if (!isInput && e.key === ' ') {
@@ -100,16 +116,27 @@ export default function EditorPage() {
   }, [handleKeyDown]);
 
   return (
-    <div className="flex flex-col h-screen bg-zinc-950 text-zinc-100 overflow-hidden select-none">
-      <TopBar />
+    <div
+      className="flex flex-col h-screen overflow-hidden select-none"
+      style={{ background: 'var(--bg)', color: 'var(--text)' }}
+    >
+      <TopBar
+        onOpenExport={() => setExportOpen(true)}
+        onOpenShare={() => setShareOpen(true)}
+      />
       <div className="flex flex-1 overflow-hidden">
         <LeftSidebar />
-        <main className="flex-1 overflow-hidden bg-zinc-950">
+        <main className="flex-1 overflow-hidden" style={{ background: 'var(--bg)' }}>
           <RugbyCanvas />
         </main>
-        <RightSidebar />
+        <RightSidebar onOpenRoster={() => setRosterOpen(true)} />
       </div>
       <SceneRail />
+
+      {/* Modals */}
+      {exportOpen && <ExportModal onClose={() => setExportOpen(false)} />}
+      {shareOpen  && <ShareModal  onClose={() => setShareOpen(false)} />}
+      {rosterOpen && <RosterModal onClose={() => setRosterOpen(false)} />}
     </div>
   );
 }

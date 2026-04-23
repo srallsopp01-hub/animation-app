@@ -266,9 +266,10 @@ function GhostActor({ actor, pitch, portrait, actorR }: { actor: Actor; pitch: P
 
 // ─── Draggable actor ──────────────────────────────────────────────────────────
 
-function ActorShape({ actor, pitch, portrait, actorR, isSelected, showPlayerNames, opacity, onSelect, onDragEnd }: {
+function ActorShape({ actor, pitch, portrait, actorR, isSelected, showPlayerNames, opacity, onSelect, onDragEnd, onBall }: {
   actor: Actor; pitch: PitchLayout; portrait: boolean; actorR: number;
-  isSelected: boolean; showPlayerNames: boolean; opacity?: number; onSelect: () => void; onDragEnd: (normX: number, normY: number) => void;
+  isSelected: boolean; showPlayerNames: boolean; opacity?: number; onBall?: boolean;
+  onSelect: () => void; onDragEnd: (normX: number, normY: number) => void;
 }) {
   const pos = toCanvas(actor.normX, actor.normY, pitch, portrait);
 
@@ -296,6 +297,7 @@ function ActorShape({ actor, pitch, portrait, actorR, isSelected, showPlayerName
     const fill = actor.team === 'home' ? '#3b82f6' : actor.team === 'away' ? '#ef4444' : '#f59e0b';
     return (
       <Group {...shared}>
+        {onBall && <Circle radius={actorR + 7} fill="transparent" stroke="#f7b500" strokeWidth={2.5} />}
         {isSelected && <Circle radius={actorR + 6} fill="rgba(250,204,21,0.14)" stroke="#facc15" strokeWidth={2.5} />}
         {actor.locked && <Circle radius={actorR + 3} stroke="rgba(255,255,255,0.25)" strokeWidth={1} dash={[3, 3]} />}
         <Circle radius={actorR} fill={fill} stroke="white" strokeWidth={2.2}
@@ -482,14 +484,14 @@ export default function RugbyCanvas() {
     addPlayArrow, deletePlayArrow, updateArrowCp,
     addZone, updateZonePosition,
     showMovementArrows, showPlayerNames, orientation, pitchScale, actorScale, transitionDuration,
-    selectedTool,
+    selectedTool, setSelectedActorNumber,
   } = useEditorStore();
 
   const portrait = orientation === 'portrait';
   const actorR = BASE_ACTOR_R * actorScale;
 
-  const currentScene = scenes.find((s) => s.id === currentSceneId);
-  const actors = currentScene?.actors ?? [];
+  const currentSceneObj = scenes.find((s) => s.id === currentSceneId);
+  const actors = currentSceneObj?.actors ?? [];
   const currentIdx = scenes.findIndex((s) => s.id === currentSceneId);
   const prevScene = currentIdx > 0 ? scenes[currentIdx - 1] : null;
 
@@ -567,8 +569,8 @@ export default function RugbyCanvas() {
 
   const isArrowTool = selectedTool.startsWith('arrow-');
   const isZoneTool  = selectedTool === 'zone';
-  const sceneArrows = currentScene?.arrows ?? [];
-  const sceneZones  = currentScene?.zones  ?? [];
+  const sceneArrows = currentSceneObj?.arrows ?? [];
+  const sceneZones  = currentSceneObj?.zones  ?? [];
 
   // ── Pointer helpers (shared between mouse and touch) ──────────────────────
   const startDraw = useCallback((x: number, y: number) => {
@@ -675,8 +677,36 @@ export default function RugbyCanvas() {
 
   const cursor = (isArrowTool || isZoneTool) ? 'crosshair' : 'default';
 
+  const currentScene = scenes.find((s) => s.id === currentSceneId);
+
   return (
-    <div ref={containerRef} className="w-full h-full" style={{ cursor }}>
+    <div className="w-full h-full flex flex-col">
+      {/* Coach cue bar */}
+      <div
+        className="flex items-center gap-3 px-5 py-2.5 shrink-0 border-b"
+        style={{ background: 'var(--bg-elev)', borderColor: 'var(--border)' }}
+      >
+        <span
+          className="text-[10px] font-mono font-bold tracking-[0.18em] uppercase shrink-0"
+          style={{ color: 'var(--accent)' }}
+        >
+          COACH CUE
+        </span>
+        <span
+          className="flex-1 text-base font-medium uppercase tracking-wide"
+          style={{
+            fontFamily: 'var(--font-oswald), Oswald, sans-serif',
+            color: currentScene?.cue ? 'var(--text)' : 'var(--text-mute)',
+          }}
+        >
+          {currentScene?.cue ?? 'No cue set for this phase'}
+        </span>
+        <span className="text-[10px] font-mono tracking-[0.18em] uppercase shrink-0" style={{ color: 'var(--text-mute)' }}>
+          TOOL · {selectedTool.toUpperCase()}
+        </span>
+      </div>
+
+      <div ref={containerRef} className="flex-1 overflow-hidden" style={{ cursor }}>
       {size.width > 0 && pitch && (
         <Stage
           ref={stageRef}
@@ -781,8 +811,17 @@ export default function RugbyCanvas() {
                 isSelected={actor.id === selectedActorId}
                 showPlayerNames={showPlayerNames}
                 opacity={(actor as AnimatedActor)._opacity ?? 1}
-                onSelect={() => { setSelectedActor(actor.id); setSelectedArrow(null); }}
+                onSelect={() => {
+                  setSelectedActor(actor.id);
+                  setSelectedArrow(null);
+                  if (actor.team === 'home' && actor.type === 'player') {
+                    setSelectedActorNumber(actor.number);
+                  } else {
+                    setSelectedActorNumber(null);
+                  }
+                }}
                 onDragEnd={(normX, normY) => updateActorPosition(actor.id, normX, normY)}
+                onBall={actor.id === currentScene?.onBall}
               />
             ))}
             {displayActors.length === 0 && sceneArrows.length === 0 && (
@@ -797,6 +836,7 @@ export default function RugbyCanvas() {
           </Layer>
         </Stage>
       )}
+      </div>
     </div>
   );
 }

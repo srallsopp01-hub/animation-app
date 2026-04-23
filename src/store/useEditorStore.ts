@@ -34,6 +34,9 @@ interface EditorStore {
   pitchScale: number;
   actorScale: number;
   transitionDuration: number;
+  palette: 'dark' | 'navy' | 'light';
+  playbackProgress: number;
+  selectedActorNumber: number | null;
 
   setProjectName: (name: string) => void;
   setIsPlaying: (playing: boolean) => void;
@@ -45,6 +48,12 @@ interface EditorStore {
   setTransitionDuration: (ms: number) => void;
   setActiveZoneColor: (color: string) => void;
   nextScene: () => boolean;
+  setPalette: (p: 'dark' | 'navy' | 'light') => void;
+  setPlaybackProgress: (n: number) => void;
+  setSelectedActorNumber: (n: number | null) => void;
+  toggleLockScene: (id: string) => void;
+  setSceneCue: (id: string, cue: string) => void;
+  setSceneOnBall: (id: string, actorId: string | null) => void;
 
   addScene: () => void;
   duplicateScene: (sceneId: string) => void;
@@ -107,6 +116,9 @@ const useEditorStore = create<EditorStore>((set, get) => ({
   pitchScale: 0.92,
   actorScale: 1.0,
   transitionDuration: 500,
+  palette: 'dark',
+  playbackProgress: 0,
+  selectedActorNumber: null,
 
   setProjectName: (name) => set({ projectName: name }),
   setIsPlaying: (playing) => set({ isPlaying: playing }),
@@ -117,6 +129,27 @@ const useEditorStore = create<EditorStore>((set, get) => ({
   setActorScale: (s) => set({ actorScale: s }),
   setTransitionDuration: (ms) => set({ transitionDuration: ms }),
   setActiveZoneColor: (color) => set({ activeZoneColor: color }),
+  setPalette: (p) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('phaseboard-palette', p);
+      document.documentElement.setAttribute('data-palette', p);
+    }
+    set({ palette: p });
+  },
+  setPlaybackProgress: (n) => set({ playbackProgress: n }),
+  setSelectedActorNumber: (n) => set({ selectedActorNumber: n }),
+  toggleLockScene: (id) =>
+    set((s) => ({
+      scenes: s.scenes.map((sc) => (sc.id === id ? { ...sc, locked: !sc.locked } : sc)),
+    })),
+  setSceneCue: (id, cue) =>
+    set((s) => ({
+      scenes: s.scenes.map((sc) => (sc.id === id ? { ...sc, cue } : sc)),
+    })),
+  setSceneOnBall: (id, actorId) =>
+    set((s) => ({
+      scenes: s.scenes.map((sc) => (sc.id === id ? { ...sc, onBall: actorId ?? undefined } : sc)),
+    })),
   nextScene: () => {
     const s = get();
     const idx = s.scenes.findIndex((sc) => sc.id === s.currentSceneId);
@@ -474,15 +507,22 @@ const useEditorStore = create<EditorStore>((set, get) => ({
   loadFromStorage: () => {
     try {
       const raw = localStorage.getItem('rugby-editor');
-      if (!raw) return;
-      const saved = JSON.parse(raw);
-      const scenes: Scene[] = (saved.scenes ?? []).map((sc: Scene) => ({
-        notes: '',
-        ...sc,
-        arrows: (sc.arrows ?? []).map((a: PlayArrow) => ({ ...a })),
-        zones: (sc.zones ?? []),
-      }));
-      set({ projectName: saved.projectName, scenes, currentSceneId: saved.currentSceneId });
+      if (raw) {
+        const saved = JSON.parse(raw);
+        const scenes: Scene[] = (saved.scenes ?? []).map((sc: Scene) => ({
+          notes: '',
+          ...sc,
+          arrows: (sc.arrows ?? []).map((a: PlayArrow) => ({ ...a })),
+          zones: (sc.zones ?? []),
+        }));
+        set({ projectName: saved.projectName, scenes, currentSceneId: saved.currentSceneId });
+      }
+      // Load palette from localStorage
+      const savedPalette = localStorage.getItem('phaseboard-palette');
+      if (savedPalette === 'navy' || savedPalette === 'light' || savedPalette === 'dark') {
+        document.documentElement.setAttribute('data-palette', savedPalette);
+        set({ palette: savedPalette });
+      }
     } catch {
       // ignore corrupt data
     }

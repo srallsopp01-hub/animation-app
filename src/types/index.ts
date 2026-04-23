@@ -58,6 +58,9 @@ export interface Scene {
   zones: Zone[];
   duration: number; // ms
   notes?: string;
+  locked?: boolean;
+  cue?: string;       // coach cue text for this phase
+  onBall?: string;    // actor id of the ball-carrier this phase
 }
 
 export interface HistoryEntry {

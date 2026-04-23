@@ -1,86 +1,33 @@
 'use client';
 
+import { useState } from 'react';
 import useEditorStore from '@/store/useEditorStore';
+import { ROSTER_IRE } from '@/data/iRoster';
 import type { ArrowDrawType, Team } from '@/types';
 
-export default function RightSidebar() {
-  const {
-    scenes, currentSceneId,
-    selectedActorId, deleteActor, toggleActorLock, updateActorNumber, updateActorTeam, updateActorName,
-    renameScene, updateSceneDuration, updateSceneNotes,
-    orientation, setOrientation,
-    pitchScale, setPitchScale,
-    actorScale, setActorScale,
-    transitionDuration, setTransitionDuration,
-    selectedArrowId, deletePlayArrow, updateArrowType,
-    selectedZoneId, deleteZone, updateZoneLabel,
-  } = useEditorStore();
+// ─── Mono label ───────────────────────────────────────────────────────────────
 
-  const currentScene = scenes.find((s) => s.id === currentSceneId);
-  const selectedActor = currentScene?.actors?.find((a) => a.id === selectedActorId);
-  const selectedArrow = currentScene?.arrows?.find((a) => a.id === selectedArrowId);
-  const selectedZone  = currentScene?.zones?.find((z) => z.id === selectedZoneId);
-
+function MonoLabel({ children }: { children: React.ReactNode }) {
   return (
-    <aside className="w-60 bg-zinc-900 border-l border-zinc-800 flex flex-col shrink-0 overflow-y-auto">
-      {selectedActor ? (
-        <ActorPanel
-          actor={selectedActor}
-          onDelete={() => deleteActor(selectedActor.id)}
-          onToggleLock={() => toggleActorLock(selectedActor.id)}
-          onNumberChange={(n) => updateActorNumber(selectedActor.id, n)}
-          onTeamChange={(t) => updateActorTeam(selectedActor.id, t)}
-          onNameChange={(name) => updateActorName(selectedActor.id, name)}
-        />
-      ) : selectedArrow ? (
-        <ArrowPanel
-          arrow={selectedArrow}
-          onDelete={() => deletePlayArrow(selectedArrow.id)}
-          onTypeChange={(t) => updateArrowType(selectedArrow.id, t)}
-        />
-      ) : selectedZone ? (
-        <ZonePanel
-          zone={selectedZone}
-          onDelete={() => deleteZone(selectedZone.id)}
-          onLabelChange={(label) => updateZoneLabel(selectedZone.id, label)}
-        />
-      ) : (
-        <ScenePanel
-          scene={currentScene}
-          sceneIndex={scenes.findIndex((s) => s.id === currentSceneId)}
-          totalScenes={scenes.length}
-          onRename={(name) => currentScene && renameScene(currentScene.id, name)}
-          onDurationChange={(d) => currentScene && updateSceneDuration(currentScene.id, d)}
-          onNotesChange={(n) => currentScene && updateSceneNotes(currentScene.id, n)}
-          orientation={orientation}
-          onOrientationChange={setOrientation}
-          pitchScale={pitchScale}
-          onPitchScaleChange={setPitchScale}
-          actorScale={actorScale}
-          onActorScaleChange={setActorScale}
-          transitionDuration={transitionDuration}
-          onTransitionDurationChange={setTransitionDuration}
-        />
-      )}
-    </aside>
+    <p className="text-[10px] font-mono font-medium tracking-[0.18em] uppercase" style={{ color: 'var(--text-mute)' }}>
+      {children}
+    </p>
   );
 }
 
-// ─── Shared helpers ───────────────────────────────────────────────────────────
-
-function PanelHeader({ children }: { children: React.ReactNode }) {
+function PanelSection({ children }: { children: React.ReactNode }) {
   return (
-    <div className="px-4 py-3 border-b border-zinc-800">
-      <p className="text-[10px] font-semibold tracking-widest text-zinc-500 uppercase">{children}</p>
+    <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--border)' }}>
+      {children}
     </div>
   );
 }
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="flex items-center justify-between px-4 py-2.5 border-b border-zinc-800/50">
-      <span className="text-xs text-zinc-500">{label}</span>
-      <span className="text-xs text-zinc-200 font-medium">{children}</span>
+    <div className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'var(--border)' }}>
+      <span className="text-xs px-4" style={{ color: 'var(--text-mute)' }}>{label}</span>
+      <span className="text-xs font-medium px-4" style={{ color: 'var(--text)' }}>{children}</span>
     </div>
   );
 }
@@ -92,21 +39,180 @@ function SliderRow({
   format: (v: number) => string; onChange: (v: number) => void;
 }) {
   return (
-    <div className="px-4 py-2.5 border-b border-zinc-800/50">
+    <div className="px-4 py-2.5 border-b" style={{ borderColor: 'var(--border)' }}>
       <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] text-zinc-500">{label}</span>
-        <span className="text-[11px] font-mono text-zinc-300">{format(value)}</span>
+        <span className="text-[11px]" style={{ color: 'var(--text-mute)' }}>{label}</span>
+        <span className="text-[11px] font-mono" style={{ color: 'var(--text-dim)' }}>{format(value)}</span>
       </div>
       <input
         type="range" min={min} max={max} step={step} value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full accent-blue-500 h-1"
+        className="w-full h-1 accent-[var(--accent)]"
+        style={{ accentColor: 'var(--accent)' }}
       />
     </div>
   );
 }
 
-// ─── Actor panel ──────────────────────────────────────────────────────────────
+// ─── On the Ball Panel ────────────────────────────────────────────────────────
+
+function OnTheBallPanel({ onOpenRoster }: { onOpenRoster: () => void }) {
+  const {
+    scenes, currentSceneId, selectedActorNumber, setSelectedActorNumber, setSceneOnBall,
+  } = useEditorStore();
+
+  const currentScene = scenes.find((s) => s.id === currentSceneId);
+  const onBallActorId = currentScene?.onBall;
+  const onBallActor = currentScene?.actors.find((a) => a.id === onBallActorId);
+  const onBallNumber = onBallActor?.number ?? null;
+
+  const displayNumber = selectedActorNumber ?? onBallNumber;
+  const player = displayNumber !== null ? ROSTER_IRE.find((r) => r.n === displayNumber) : null;
+
+  const MOCK_STATS = [
+    { label: 'Carries',   value: 8 },
+    { label: 'Tackles',   value: 11 },
+    { label: 'Metres',    value: 42 },
+    { label: 'Passes',    value: 23 },
+    { label: 'Turnovers', value: 2 },
+    { label: 'Minutes',   value: 58 },
+  ];
+
+  return (
+    <>
+      {/* Header */}
+      <PanelSection>
+        <div className="flex items-center justify-between">
+          <MonoLabel>ON THE BALL</MonoLabel>
+          <button
+            onClick={onOpenRoster}
+            className="text-[10px] font-mono font-medium px-2 py-0.5 rounded border transition-colors"
+            style={{ borderColor: 'var(--border-strong)', color: 'var(--text-mute)' }}
+          >
+            ROSTER
+          </button>
+        </div>
+      </PanelSection>
+
+      {!player ? (
+        /* Empty state */
+        <div className="flex flex-col items-center justify-center py-8 px-4 gap-3">
+          <div
+            className="w-17 h-17 rounded-full border-2 border-dashed flex items-center justify-center"
+            style={{ borderColor: 'var(--border-strong)', width: 68, height: 68 }}
+          >
+            <span className="text-2xl font-bold" style={{ color: 'var(--text-mute)' }}>?</span>
+          </div>
+          <div className="text-center">
+            <p
+              className="text-base font-medium uppercase"
+              style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--text-dim)', letterSpacing: '0.04em' }}
+            >
+              No player selected
+            </p>
+            <p className="text-[10px] font-mono mt-1" style={{ color: 'var(--text-mute)' }}>
+              Click a home player on pitch or open roster
+            </p>
+          </div>
+          <button
+            onClick={onOpenRoster}
+            className="px-4 py-2 rounded-lg text-sm font-medium border transition-colors"
+            style={{ borderColor: 'var(--accent)', color: 'var(--accent)' }}
+          >
+            Open Roster
+          </button>
+        </div>
+      ) : (
+        /* Filled state */
+        <div className="flex flex-col gap-0">
+          {/* Jersey + name */}
+          <PanelSection>
+            <div className="flex items-center gap-3">
+              <div
+                className="w-14 h-14 rounded-lg flex items-center justify-center shrink-0"
+                style={{ background: 'var(--accent)' }}
+              >
+                <span
+                  className="text-3xl font-bold leading-none"
+                  style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: '#0a0a0a' }}
+                >
+                  {player.n}
+                </span>
+              </div>
+              <div>
+                <p
+                  className="text-xl font-bold uppercase leading-tight"
+                  style={{ fontFamily: 'var(--font-oswald), Oswald, sans-serif', color: 'var(--text)' }}
+                >
+                  {player.name}
+                </p>
+                <p className="text-[9px] font-mono uppercase tracking-[0.12em]" style={{ color: 'var(--text-mute)' }}>
+                  {player.pos}
+                </p>
+              </div>
+            </div>
+          </PanelSection>
+
+          {/* Role */}
+          <PanelSection>
+            <MonoLabel>ROLE · THIS PHASE</MonoLabel>
+            <p className="text-sm mt-1.5" style={{ color: 'var(--text-dim)' }}>{player.role}</p>
+          </PanelSection>
+
+          {/* Stats */}
+          <PanelSection>
+            <MonoLabel>MATCH STATS</MonoLabel>
+            <div className="grid grid-cols-3 gap-1.5 mt-2">
+              {MOCK_STATS.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-lg p-2 text-center"
+                  style={{ background: 'var(--bg-elev-2)' }}
+                >
+                  <p
+                    className="text-base font-bold leading-none"
+                    style={{ color: 'var(--text)' }}
+                  >
+                    {stat.value}
+                  </p>
+                  <p className="text-[9px] font-mono uppercase mt-0.5" style={{ color: 'var(--text-mute)' }}>
+                    {stat.label}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </PanelSection>
+
+          {/* Clear / Set on ball */}
+          <div className="px-4 py-3 flex gap-2">
+            {selectedActorNumber !== null && (
+              <button
+                onClick={() => setSelectedActorNumber(null)}
+                className="flex-1 py-2 rounded-lg text-xs font-medium border transition-colors"
+                style={{ borderColor: 'var(--border-strong)', color: 'var(--text-mute)' }}
+              >
+                Clear selection
+              </button>
+            )}
+            <button
+              onClick={() => {
+                if (currentScene && onBallActor) {
+                  setSceneOnBall(currentScene.id, selectedActorNumber !== null ? null : onBallActorId ?? null);
+                }
+              }}
+              className="flex-1 py-2 rounded-lg text-xs font-medium transition-colors"
+              style={{ background: 'var(--bg-elev-2)', color: 'var(--text-dim)', border: `1px solid var(--border)` }}
+            >
+              Set on ball
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+// ─── Existing panels ──────────────────────────────────────────────────────────
 
 type AnyActor = ReturnType<typeof useEditorStore.getState>['scenes'][0]['actors'][0];
 
@@ -120,102 +226,94 @@ function ActorPanel({
   onTeamChange: (t: Team) => void;
   onNameChange: (name: string) => void;
 }) {
-  const teamColor = actor.team === 'home' ? '#3b82f6' : actor.team === 'away' ? '#ef4444' : '#f59e0b';
-  const typeLabel = actor.type === 'player' ? 'Player' : actor.type === 'ball' ? 'Ball' : 'Cone';
-
   return (
     <>
-      <PanelHeader>Selected Object</PanelHeader>
-      <div className="flex items-center justify-center py-5 border-b border-zinc-800 bg-zinc-950/30">
+      <PanelSection>
+        <MonoLabel>Selected Object</MonoLabel>
+      </PanelSection>
+      <div className="flex items-center justify-center py-4 border-b" style={{ borderColor: 'var(--border)' }}>
         <ActorPreview type={actor.type} team={actor.team} number={actor.number} />
       </div>
-      <Row label="Type">{typeLabel}</Row>
+      <Row label="Type">{actor.type === 'player' ? 'Player' : actor.type === 'ball' ? 'Ball' : 'Cone'}</Row>
 
-      {/* Team selector */}
-      <div className="px-4 py-2.5 border-b border-zinc-800/50">
-        <span className="text-xs text-zinc-500 block mb-2">Team</span>
+      {/* Team */}
+      <PanelSection>
+        <span className="text-xs block mb-2" style={{ color: 'var(--text-mute)' }}>Team</span>
         <div className="flex gap-1">
           {(['home', 'away', 'neutral'] as Team[]).map((t) => (
             <button
               key={t}
               onClick={() => onTeamChange(t)}
-              className={`flex-1 py-1.5 rounded-md text-[11px] font-medium capitalize transition-colors border ${
-                actor.team === t
-                  ? t === 'home'
-                    ? 'bg-blue-600 border-blue-500 text-white'
-                    : t === 'away'
-                      ? 'bg-red-600 border-red-500 text-white'
-                      : 'bg-amber-600 border-amber-500 text-white'
-                  : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-zinc-200'
-              }`}
+              className="flex-1 py-1.5 rounded-md text-[11px] font-medium capitalize transition-colors border"
+              style={{
+                background: actor.team === t ? (t === 'home' ? '#3b82f6' : t === 'away' ? '#ef4444' : '#f59e0b') : 'var(--bg-elev-2)',
+                borderColor: actor.team === t ? 'transparent' : 'var(--border)',
+                color: actor.team === t ? 'white' : 'var(--text-mute)',
+              }}
             >
               {t === 'neutral' ? 'Neu' : t.charAt(0).toUpperCase() + t.slice(1)}
             </button>
           ))}
         </div>
-      </div>
+      </PanelSection>
 
-      {/* Number editor */}
+      {/* Number */}
       {actor.type === 'player' && (
-        <div className="px-4 py-2.5 border-b border-zinc-800/50">
+        <PanelSection>
           <div className="flex items-center justify-between">
-            <span className="text-xs text-zinc-500">Jersey #</span>
+            <span className="text-xs" style={{ color: 'var(--text-mute)' }}>Jersey #</span>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => onNumberChange(Math.max(1, actor.number - 1))}
-                className="w-6 h-6 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-bold flex items-center justify-center"
+                className="w-6 h-6 rounded flex items-center justify-center text-sm font-bold transition-colors"
+                style={{ background: 'var(--bg-elev-2)', color: 'var(--text-dim)' }}
               >−</button>
               <input
-                type="number"
-                min={1} max={99}
-                value={actor.number}
-                onChange={(e) => {
-                  const v = parseInt(e.target.value);
-                  if (!isNaN(v) && v >= 1 && v <= 99) onNumberChange(v);
-                }}
-                className="w-10 text-center bg-zinc-800 border border-zinc-700 rounded text-sm text-zinc-100 outline-none focus:border-blue-500 py-0.5"
+                type="number" min={1} max={99} value={actor.number}
+                onChange={(e) => { const v = parseInt(e.target.value); if (!isNaN(v) && v >= 1 && v <= 99) onNumberChange(v); }}
+                className="w-10 text-center rounded text-sm outline-none py-0.5"
+                style={{ background: 'var(--bg-elev-2)', border: `1px solid var(--border)`, color: 'var(--text)' }}
               />
               <button
                 onClick={() => onNumberChange(Math.min(99, actor.number + 1))}
-                className="w-6 h-6 rounded bg-zinc-800 hover:bg-zinc-700 text-zinc-300 text-sm font-bold flex items-center justify-center"
+                className="w-6 h-6 rounded flex items-center justify-center text-sm font-bold transition-colors"
+                style={{ background: 'var(--bg-elev-2)', color: 'var(--text-dim)' }}
               >+</button>
             </div>
           </div>
-        </div>
+        </PanelSection>
       )}
 
-      {/* Player name */}
+      {/* Name */}
       {actor.type === 'player' && (
-        <div className="px-4 py-2.5 border-b border-zinc-800/50">
-          <label className="text-xs text-zinc-500 block mb-1.5">Player Name</label>
+        <PanelSection>
+          <label className="text-xs block mb-1.5" style={{ color: 'var(--text-mute)' }}>Player Name</label>
           <input
-            type="text"
-            value={actor.name ?? ''}
+            type="text" value={actor.name ?? ''}
             onChange={(e) => onNameChange(e.target.value)}
-            placeholder="e.g. Sexton, Larmour..."
-            className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-100 outline-none focus:border-blue-500 transition-colors placeholder-zinc-600"
+            placeholder="e.g. Sexton..."
+            className="w-full rounded-lg px-3 py-1.5 text-xs outline-none transition-colors"
+            style={{ background: 'var(--bg-elev-2)', border: `1px solid var(--border)`, color: 'var(--text)' }}
           />
-        </div>
+        </PanelSection>
       )}
 
-      <Row label="Locked">{actor.locked ? '🔒 Yes' : 'No'}</Row>
-      <div className="p-3 space-y-2 mt-auto border-t border-zinc-800">
+      <div className="p-3 space-y-2 mt-auto border-t" style={{ borderColor: 'var(--border)' }}>
         <button
           onClick={onToggleLock}
-          className="w-full py-2 rounded-lg text-sm font-medium bg-zinc-800 hover:bg-zinc-700 text-zinc-300 hover:text-white transition-colors"
+          className="w-full py-2 rounded-lg text-sm font-medium transition-colors"
+          style={{ background: 'var(--bg-elev-2)', color: 'var(--text-dim)' }}
         >
           {actor.locked ? '🔓 Unlock' : '🔒 Lock position'}
         </button>
         <button
           onClick={onDelete}
-          className="w-full py-2 rounded-lg text-sm font-medium bg-red-950/50 hover:bg-red-900/60 text-red-400 hover:text-red-300 border border-red-900/40 transition-colors"
+          className="w-full py-2 rounded-lg text-sm font-medium border transition-colors"
+          style={{ background: 'rgba(225,29,72,0.1)', borderColor: 'rgba(225,29,72,0.3)', color: '#e11d48' }}
         >
-          Delete <kbd className="ml-1 text-[10px] text-red-600 font-mono">⌫</kbd>
+          Delete ⌫
         </button>
       </div>
-
-      {/* Preview updates live with team colour */}
-      <div className="hidden" style={{ color: teamColor }} />
     </>
   );
 }
@@ -244,8 +342,6 @@ function ActorPreview({ type, team, number }: { type: string; team: string; numb
   );
 }
 
-// ─── Arrow panel ──────────────────────────────────────────────────────────────
-
 type AnyArrow = ReturnType<typeof useEditorStore.getState>['scenes'][0]['arrows'][0];
 
 const ARROW_TYPES: { type: ArrowDrawType; label: string; desc: string }[] = [
@@ -255,144 +351,79 @@ const ARROW_TYPES: { type: ArrowDrawType; label: string; desc: string }[] = [
 ];
 
 function ArrowPanel({ arrow, onDelete, onTypeChange }: {
-  arrow: AnyArrow;
-  onDelete: () => void;
-  onTypeChange: (t: ArrowDrawType) => void;
+  arrow: AnyArrow; onDelete: () => void; onTypeChange: (t: ArrowDrawType) => void;
 }) {
-  const previewColor = arrow.type === 'kick' ? '#fbbf24' : 'white';
-  const dash = arrow.type === 'pass' ? '8 6' : arrow.type === 'kick' ? '14 7' : undefined;
-
   return (
     <>
-      <PanelHeader>Selected Arrow</PanelHeader>
-
-      {/* Visual preview */}
-      <div className="flex items-center justify-center py-5 border-b border-zinc-800 bg-zinc-950/30">
-        <svg width="80" height="30" viewBox="0 0 80 30">
-          <defs>
-            <marker id="arrowhead" markerWidth="6" markerHeight="6" refX="6" refY="3" orient="auto">
-              <path d="M0,0 L6,3 L0,6 Z" fill={previewColor} />
-            </marker>
-          </defs>
-          <line x1="8" y1="15" x2="68" y2="15"
-            stroke={previewColor} strokeWidth="2.5"
-            strokeDasharray={dash}
-            markerEnd="url(#arrowhead)"
-          />
-        </svg>
-      </div>
-
-      {/* Type switcher */}
-      <div className="px-4 py-3 border-b border-zinc-800/50">
-        <span className="text-[11px] text-zinc-500 block mb-2">Arrow type</span>
-        <div className="flex flex-col gap-1">
+      <PanelSection><MonoLabel>Selected Arrow</MonoLabel></PanelSection>
+      <PanelSection>
+        <MonoLabel>Arrow Type</MonoLabel>
+        <div className="flex flex-col gap-1 mt-2">
           {ARROW_TYPES.map(({ type, label, desc }) => (
             <button
               key={type}
               onClick={() => onTypeChange(type)}
-              className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors border ${
-                arrow.type === type
-                  ? 'bg-zinc-700 border-zinc-500 text-zinc-100'
-                  : 'bg-zinc-800/60 border-zinc-700/50 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800'
-              }`}
+              className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors border"
+              style={{
+                background: arrow.type === type ? 'var(--bg-elev-2)' : 'transparent',
+                borderColor: arrow.type === type ? 'var(--border-strong)' : 'var(--border)',
+                color: arrow.type === type ? 'var(--text)' : 'var(--text-mute)',
+              }}
             >
-              <ArrowTypeIcon type={type} />
               <span>{label}</span>
-              <span className="ml-auto text-zinc-600 text-[10px]">{desc}</span>
+              <span className="ml-auto text-[10px]" style={{ color: 'var(--text-mute)' }}>{desc}</span>
             </button>
           ))}
         </div>
-      </div>
-
-      <div className="px-4 py-3 text-[11px] text-zinc-600 leading-relaxed border-b border-zinc-800/50">
-        Drag the midpoint handle on the pitch to curve this arrow.
-      </div>
-
-      <div className="p-3 mt-auto border-t border-zinc-800">
+      </PanelSection>
+      <div className="p-3 mt-auto border-t" style={{ borderColor: 'var(--border)' }}>
         <button
           onClick={onDelete}
-          className="w-full py-2 rounded-lg text-sm font-medium bg-red-950/50 hover:bg-red-900/60 text-red-400 hover:text-red-300 border border-red-900/40 transition-colors"
+          className="w-full py-2 rounded-lg text-sm font-medium border transition-colors"
+          style={{ background: 'rgba(225,29,72,0.1)', borderColor: 'rgba(225,29,72,0.3)', color: '#e11d48' }}
         >
-          Delete Arrow <kbd className="ml-1 text-[10px] text-red-600 font-mono">⌫</kbd>
+          Delete Arrow ⌫
         </button>
       </div>
     </>
   );
 }
-
-function ArrowTypeIcon({ type }: { type: ArrowDrawType }) {
-  const color = type === 'kick' ? '#fbbf24' : 'rgba(255,255,255,0.7)';
-  const dash = type === 'pass' ? '3 2' : type === 'kick' ? '5 3' : undefined;
-  return (
-    <svg width="22" height="10" viewBox="0 0 22 10" fill="none">
-      <line x1="2" y1="5" x2="16" y2="5" stroke={color} strokeWidth="1.8" strokeDasharray={dash} strokeLinecap="round" />
-      <path d="M13 2 L18 5 L13 8" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-// ─── Zone panel ───────────────────────────────────────────────────────────────
 
 type AnyZone = ReturnType<typeof useEditorStore.getState>['scenes'][0]['zones'][0];
 
 function ZonePanel({ zone, onDelete, onLabelChange }: {
-  zone: AnyZone;
-  onDelete: () => void;
-  onLabelChange: (label: string) => void;
+  zone: AnyZone; onDelete: () => void; onLabelChange: (label: string) => void;
 }) {
-  const shapeLabel = zone.shape === 'rect' ? 'Rectangle' : 'Ellipse';
-  const fillColor = zone.color.replace(/[\d.]+\)$/, '0.35)');
-  const borderColor = zone.color;
-
   return (
     <>
-      <PanelHeader>Selected Zone</PanelHeader>
-
-      {/* Visual preview */}
-      <div className="flex items-center justify-center py-5 border-b border-zinc-800 bg-zinc-950/30">
-        <svg width="80" height="44" viewBox="0 0 80 44">
-          {zone.shape === 'rect'
-            ? <rect x="8" y="8" width="64" height="28" rx="3" fill={fillColor} stroke={borderColor} strokeWidth="1.5" />
-            : <ellipse cx="40" cy="22" rx="32" ry="14" fill={fillColor} stroke={borderColor} strokeWidth="1.5" />
-          }
-        </svg>
-      </div>
-
-      <Row label="Shape">{shapeLabel}</Row>
-
-      {/* Label */}
-      <div className="px-4 py-2.5 border-b border-zinc-800/50">
-        <label className="text-xs text-zinc-500 block mb-1.5">Label (optional)</label>
+      <PanelSection><MonoLabel>Selected Zone</MonoLabel></PanelSection>
+      <Row label="Shape">{zone.shape === 'rect' ? 'Rectangle' : 'Ellipse'}</Row>
+      <PanelSection>
+        <label className="text-xs block mb-1.5" style={{ color: 'var(--text-mute)' }}>Label (optional)</label>
         <input
-          type="text"
-          value={zone.label ?? ''}
+          type="text" value={zone.label ?? ''}
           onChange={(e) => onLabelChange(e.target.value)}
-          placeholder="e.g. Red Zone, Kick Chase..."
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs text-zinc-100 outline-none focus:border-blue-500 transition-colors placeholder-zinc-600"
+          placeholder="e.g. Red Zone..."
+          className="w-full rounded-lg px-3 py-1.5 text-xs outline-none"
+          style={{ background: 'var(--bg-elev-2)', border: `1px solid var(--border)`, color: 'var(--text)' }}
         />
-      </div>
-
-      <div className="px-4 py-3 text-[11px] text-zinc-600 leading-relaxed border-b border-zinc-800/50">
-        Drag the zone to reposition it on the pitch.
-      </div>
-
-      <div className="p-3 mt-auto border-t border-zinc-800">
+      </PanelSection>
+      <div className="p-3 mt-auto border-t" style={{ borderColor: 'var(--border)' }}>
         <button
           onClick={onDelete}
-          className="w-full py-2 rounded-lg text-sm font-medium bg-red-950/50 hover:bg-red-900/60 text-red-400 hover:text-red-300 border border-red-900/40 transition-colors"
+          className="w-full py-2 rounded-lg text-sm font-medium border transition-colors"
+          style={{ background: 'rgba(225,29,72,0.1)', borderColor: 'rgba(225,29,72,0.3)', color: '#e11d48' }}
         >
-          Delete Zone <kbd className="ml-1 text-[10px] text-red-600 font-mono">⌫</kbd>
+          Delete Zone ⌫
         </button>
       </div>
     </>
   );
 }
 
-// ─── Scene panel ──────────────────────────────────────────────────────────────
-
 type AnyScene = ReturnType<typeof useEditorStore.getState>['scenes'][0];
 
-function ScenePanel({
+function SceneControlsPanel({
   scene, sceneIndex, totalScenes,
   onRename, onDurationChange, onNotesChange,
   orientation, onOrientationChange,
@@ -400,145 +431,189 @@ function ScenePanel({
   actorScale, onActorScaleChange,
   transitionDuration, onTransitionDurationChange,
 }: {
-  scene: AnyScene | undefined;
-  sceneIndex: number;
-  totalScenes: number;
-  onRename: (name: string) => void;
-  onDurationChange: (ms: number) => void;
-  onNotesChange: (n: string) => void;
-  orientation: 'landscape' | 'portrait';
-  onOrientationChange: (o: 'landscape' | 'portrait') => void;
-  pitchScale: number;
-  onPitchScaleChange: (s: number) => void;
-  actorScale: number;
-  onActorScaleChange: (s: number) => void;
-  transitionDuration: number;
-  onTransitionDurationChange: (ms: number) => void;
+  scene: AnyScene | undefined; sceneIndex: number; totalScenes: number;
+  onRename: (name: string) => void; onDurationChange: (ms: number) => void; onNotesChange: (n: string) => void;
+  orientation: 'landscape' | 'portrait'; onOrientationChange: (o: 'landscape' | 'portrait') => void;
+  pitchScale: number; onPitchScaleChange: (s: number) => void;
+  actorScale: number; onActorScaleChange: (s: number) => void;
+  transitionDuration: number; onTransitionDurationChange: (ms: number) => void;
 }) {
   if (!scene) return null;
-
-  const homeCount = scene.actors.filter((a) => a.team === 'home').length;
-  const awayCount = scene.actors.filter((a) => a.team === 'away').length;
-  const ballCount = scene.actors.filter((a) => a.type === 'ball').length;
-  const coneCount = scene.actors.filter((a) => a.type === 'cone').length;
-
   return (
     <>
-      <PanelHeader>Scene {sceneIndex + 1} of {totalScenes}</PanelHeader>
-
-      {/* Scene name */}
-      <div className="px-4 py-3 border-b border-zinc-800/60">
-        <label className="text-[11px] text-zinc-500 mb-1.5 block">Scene Name</label>
+      <PanelSection>
+        <MonoLabel>Scene {sceneIndex + 1} of {totalScenes}</MonoLabel>
+      </PanelSection>
+      <PanelSection>
+        <label className="text-[11px] block mb-1.5" style={{ color: 'var(--text-mute)' }}>Scene Name</label>
         <input
           value={scene.name}
           onChange={(e) => onRename(e.target.value)}
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-sm text-zinc-100 outline-none focus:border-blue-500 transition-colors"
+          className="w-full rounded-lg px-3 py-1.5 text-sm outline-none"
+          style={{ background: 'var(--bg-elev-2)', border: `1px solid var(--border)`, color: 'var(--text)' }}
         />
-      </div>
-
-      {/* Scene notes */}
-      <div className="px-4 py-3 border-b border-zinc-800/60">
-        <label className="text-[11px] text-zinc-500 mb-1.5 block">Coaching Notes</label>
+      </PanelSection>
+      <PanelSection>
+        <label className="text-[11px] block mb-1.5" style={{ color: 'var(--text-mute)' }}>Coach Cue</label>
+        <input
+          value={scene.cue ?? ''}
+          onChange={(e) => useEditorStore.getState().setSceneCue(scene.id, e.target.value)}
+          placeholder="e.g. Strike off the top..."
+          className="w-full rounded-lg px-3 py-1.5 text-xs outline-none"
+          style={{ background: 'var(--bg-elev-2)', border: `1px solid var(--border)`, color: 'var(--text)' }}
+        />
+      </PanelSection>
+      <PanelSection>
+        <label className="text-[11px] block mb-1.5" style={{ color: 'var(--text-mute)' }}>Coaching Notes</label>
         <textarea
           value={scene.notes ?? ''}
           onChange={(e) => onNotesChange(e.target.value)}
           placeholder="e.g. Scrum half feeds off the base..."
           rows={3}
-          className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-zinc-100 outline-none focus:border-blue-500 transition-colors resize-none placeholder-zinc-600"
+          className="w-full rounded-lg px-3 py-2 text-xs outline-none resize-none"
+          style={{ background: 'var(--bg-elev-2)', border: `1px solid var(--border)`, color: 'var(--text)' }}
         />
-      </div>
-
-      {/* Playback duration */}
-      <SliderRow
-        label="Scene Duration"
-        value={scene.duration}
-        min={400} max={5000} step={100}
-        format={(v) => `${(v / 1000).toFixed(1)}s`}
-        onChange={onDurationChange}
-      />
-
-      {/* Actor counts */}
-      <div className="px-4 py-3 border-b border-zinc-800/60">
-        <p className="text-[11px] text-zinc-500 mb-2">Actors on pitch</p>
-        <div className="grid grid-cols-2 gap-1.5">
-          <CountBadge label="Home"  count={homeCount} color="bg-blue-900/50 text-blue-300 border-blue-800/40" />
-          <CountBadge label="Away"  count={awayCount} color="bg-red-900/50 text-red-300 border-red-800/40" />
-          <CountBadge label="Ball"  count={ballCount} color="bg-amber-900/50 text-amber-300 border-amber-800/40" />
-          <CountBadge label="Cone"  count={coneCount} color="bg-orange-900/50 text-orange-300 border-orange-800/40" />
-        </div>
-      </div>
-
-      {/* ── Canvas controls ─────────────────────────────── */}
-      <PanelHeader>Canvas</PanelHeader>
-
-      {/* Orientation */}
-      <div className="px-4 py-3 border-b border-zinc-800/50">
-        <p className="text-[11px] text-zinc-500 mb-2">Pitch Orientation</p>
-        <div className="flex rounded-lg overflow-hidden border border-zinc-700">
+      </PanelSection>
+      <SliderRow label="Scene Duration" value={scene.duration} min={400} max={5000} step={100}
+        format={(v) => `${(v / 1000).toFixed(1)}s`} onChange={onDurationChange} />
+      <PanelSection>
+        <p className="text-[11px] mb-2" style={{ color: 'var(--text-mute)' }}>Pitch Orientation</p>
+        <div className="flex rounded-lg overflow-hidden border" style={{ borderColor: 'var(--border)' }}>
           <button
             onClick={() => onOrientationChange('landscape')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors ${
-              orientation === 'landscape' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-            }`}
+            className="flex-1 py-2 text-xs font-medium transition-colors"
+            style={{ background: orientation === 'landscape' ? 'var(--accent)' : 'var(--bg-elev-2)', color: orientation === 'landscape' ? '#0a0a0a' : 'var(--text-mute)' }}
           >
-            <LandscapeIcon /> Landscape
+            Landscape
           </button>
           <button
             onClick={() => onOrientationChange('portrait')}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2 text-xs font-medium transition-colors ${
-              orientation === 'portrait' ? 'bg-blue-600 text-white' : 'bg-zinc-800 text-zinc-400 hover:text-zinc-200'
-            }`}
+            className="flex-1 py-2 text-xs font-medium transition-colors"
+            style={{ background: orientation === 'portrait' ? 'var(--accent)' : 'var(--bg-elev-2)', color: orientation === 'portrait' ? '#0a0a0a' : 'var(--text-mute)' }}
           >
-            <PortraitIcon /> Portrait
+            Portrait
           </button>
         </div>
-      </div>
-
-      <SliderRow label="Pitch Size"   value={pitchScale}         min={0.4}  max={1.0}  step={0.02} format={(v) => `${Math.round(v * 100)}%`}          onChange={onPitchScaleChange} />
-      <SliderRow label="Player Size"  value={actorScale}         min={0.5}  max={2.0}  step={0.05} format={(v) => `${Math.round(v * 100)}%`}          onChange={onActorScaleChange} />
-      <SliderRow label="Transition"   value={transitionDuration} min={0}    max={1200} step={50}   format={(v) => v === 0 ? 'Cut' : `${(v / 1000).toFixed(1)}s`}    onChange={onTransitionDurationChange} />
-
-      {/* Tips */}
-      <div className="p-4 mt-auto">
-        <div className="bg-zinc-800/40 rounded-lg p-3 space-y-1.5">
-          <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Tips</p>
-          <p className="text-[11px] text-zinc-600 leading-relaxed">Click any object to see its properties.</p>
-          <p className="text-[11px] text-zinc-600 leading-relaxed">Duplicate a scene, then move players for the next phase.</p>
-          <p className="text-[11px] text-zinc-600 leading-relaxed">
-            <kbd className="px-1 py-0.5 bg-zinc-700 rounded text-zinc-400 font-mono">Space</kbd> to play ·{' '}
-            <kbd className="px-1 py-0.5 bg-zinc-700 rounded text-zinc-400 font-mono">⌫</kbd> to delete
-          </p>
-        </div>
-      </div>
+      </PanelSection>
+      <SliderRow label="Pitch Size" value={pitchScale} min={0.4} max={1.0} step={0.02}
+        format={(v) => `${Math.round(v * 100)}%`} onChange={onPitchScaleChange} />
+      <SliderRow label="Player Size" value={actorScale} min={0.5} max={2.0} step={0.05}
+        format={(v) => `${Math.round(v * 100)}%`} onChange={onActorScaleChange} />
+      <SliderRow label="Transition" value={transitionDuration} min={0} max={1200} step={50}
+        format={(v) => v === 0 ? 'Cut' : `${(v / 1000).toFixed(1)}s`} onChange={onTransitionDurationChange} />
     </>
   );
 }
 
-function CountBadge({ label, count, color }: { label: string; count: number; color: string }) {
-  return (
-    <div className={`flex items-center justify-between px-2.5 py-1.5 rounded-lg border text-xs font-medium ${color}`}>
-      <span className="text-zinc-400">{label}</span>
-      <span className="font-bold">{count}</span>
-    </div>
-  );
+// ─── Main RightSidebar ────────────────────────────────────────────────────────
+
+interface RightSidebarProps {
+  onOpenRoster: () => void;
 }
 
-function LandscapeIcon() {
-  return (
-    <svg width="14" height="10" viewBox="0 0 14 10" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="1" y="1" width="12" height="8" rx="1" />
-      <line x1="5" y1="1" x2="5" y2="9" strokeOpacity="0.5" />
-      <line x1="9" y1="1" x2="9" y2="9" strokeOpacity="0.5" />
-    </svg>
-  );
-}
+export default function RightSidebar({ onOpenRoster }: RightSidebarProps) {
+  const {
+    scenes, currentSceneId,
+    selectedActorId, deleteActor, toggleActorLock, updateActorNumber, updateActorTeam, updateActorName,
+    renameScene, updateSceneDuration, updateSceneNotes,
+    orientation, setOrientation,
+    pitchScale, setPitchScale,
+    actorScale, setActorScale,
+    transitionDuration, setTransitionDuration,
+    selectedArrowId, deletePlayArrow, updateArrowType,
+    selectedZoneId, deleteZone, updateZoneLabel,
+  } = useEditorStore();
 
-function PortraitIcon() {
+  const [tab, setTab] = useState<'ball' | 'scene'>('ball');
+
+  const currentScene = scenes.find((s) => s.id === currentSceneId);
+  const selectedActor = currentScene?.actors?.find((a) => a.id === selectedActorId);
+  const selectedArrow = currentScene?.arrows?.find((a) => a.id === selectedArrowId);
+  const selectedZone  = currentScene?.zones?.find((z) => z.id === selectedZoneId);
+
+  // If something is selected, show property panels
+  const showProperty = selectedActor || selectedArrow || selectedZone;
+
   return (
-    <svg width="10" height="14" viewBox="0 0 10 14" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="1" y="1" width="8" height="12" rx="1" />
-      <line x1="1" y1="5" x2="9" y2="5" strokeOpacity="0.5" />
-      <line x1="1" y1="9" x2="9" y2="9" strokeOpacity="0.5" />
-    </svg>
+    <aside
+      className="w-[280px] shrink-0 flex flex-col overflow-hidden border-l"
+      style={{ background: 'var(--bg-elev)', borderColor: 'var(--border)' }}
+    >
+      {showProperty ? (
+        <div className="flex-1 overflow-y-auto sidebar-scroll flex flex-col">
+          {selectedActor ? (
+            <ActorPanel
+              actor={selectedActor}
+              onDelete={() => deleteActor(selectedActor.id)}
+              onToggleLock={() => toggleActorLock(selectedActor.id)}
+              onNumberChange={(n) => updateActorNumber(selectedActor.id, n)}
+              onTeamChange={(t) => updateActorTeam(selectedActor.id, t)}
+              onNameChange={(name) => updateActorName(selectedActor.id, name)}
+            />
+          ) : selectedArrow ? (
+            <ArrowPanel
+              arrow={selectedArrow}
+              onDelete={() => deletePlayArrow(selectedArrow.id)}
+              onTypeChange={(t) => updateArrowType(selectedArrow.id, t)}
+            />
+          ) : selectedZone ? (
+            <ZonePanel
+              zone={selectedZone}
+              onDelete={() => deleteZone(selectedZone.id)}
+              onLabelChange={(label) => updateZoneLabel(selectedZone.id, label)}
+            />
+          ) : null}
+        </div>
+      ) : (
+        <>
+          {/* Tab switcher */}
+          <div className="flex border-b shrink-0" style={{ borderColor: 'var(--border)' }}>
+            <button
+              onClick={() => setTab('ball')}
+              className="flex-1 py-2.5 text-[10px] font-mono font-medium tracking-[0.18em] uppercase transition-colors"
+              style={{
+                color: tab === 'ball' ? 'var(--accent)' : 'var(--text-mute)',
+                borderBottom: tab === 'ball' ? `2px solid var(--accent)` : '2px solid transparent',
+              }}
+            >
+              On The Ball
+            </button>
+            <button
+              onClick={() => setTab('scene')}
+              className="flex-1 py-2.5 text-[10px] font-mono font-medium tracking-[0.18em] uppercase transition-colors"
+              style={{
+                color: tab === 'scene' ? 'var(--accent)' : 'var(--text-mute)',
+                borderBottom: tab === 'scene' ? `2px solid var(--accent)` : '2px solid transparent',
+              }}
+            >
+              Scene
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto sidebar-scroll flex flex-col">
+            {tab === 'ball' ? (
+              <OnTheBallPanel onOpenRoster={onOpenRoster} />
+            ) : (
+              <SceneControlsPanel
+                scene={currentScene}
+                sceneIndex={scenes.findIndex((s) => s.id === currentSceneId)}
+                totalScenes={scenes.length}
+                onRename={(name) => currentScene && renameScene(currentScene.id, name)}
+                onDurationChange={(d) => currentScene && updateSceneDuration(currentScene.id, d)}
+                onNotesChange={(n) => currentScene && updateSceneNotes(currentScene.id, n)}
+                orientation={orientation}
+                onOrientationChange={setOrientation}
+                pitchScale={pitchScale}
+                onPitchScaleChange={setPitchScale}
+                actorScale={actorScale}
+                onActorScaleChange={setActorScale}
+                transitionDuration={transitionDuration}
+                onTransitionDurationChange={setTransitionDuration}
+              />
+            )}
+          </div>
+        </>
+      )}
+    </aside>
   );
 }
