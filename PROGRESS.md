@@ -1,6 +1,6 @@
 # Phaseboard — Build Progress Log
 
-> **Last updated:** 2026-04-23
+> **Last updated:** 2026-05-13
 >
 > **Repository:** https://github.com/srallsopp01-hub/animation-app
 >
@@ -101,12 +101,7 @@ All development happened on 2026-04-23. Commits are:
 - **Bezier curves**: drawn arrows bent by dragging their midpoint handle
 - **Zone drawing**: drag to draw rectangular zones with colour, opacity, label
 - **Zone thumbnails**: SceneRail SVG cards render zones as coloured overlays
-- **12 formation presets** in LeftSidebar:
-  - Kickoff & kickoff defence
-  - Lineout: 5-man, 6+1 (deception), 7-man — each with top/bottom touchline variant
-  - Scrum: top and bottom touchline variants
-  - Penalty attack
-  - Open play / breakdown
+- **12 formation presets** in LeftSidebar (expanded to 20 in Session 6 — see below)
 
 **Formation accuracy rules:**
 - `normX`: 0 = home dead-ball → 1 = away dead-ball (112 m landscape)
@@ -129,7 +124,25 @@ All development happened on 2026-04-23. Commits are:
 
 ---
 
-### Phase 6 — Broadcast Redesign (Sprint B visual layer)
+### Phase 6 — Formation Overhaul (Session 6, 2026-05-13)
+
+**Status: Complete** — commit `e228728` on `main`
+
+**Problem:** All 15 players in every preset were stacking in a single vertical strip (~41px wide) because home backs were placed *ahead* of the line of touch instead of 10m behind it, and lineout column spacing (0.018 normY) was smaller than the token diameter (32px).
+
+**What was fixed:**
+
+- **Backs spread correctly**: home backs now at normX ~0.116–0.161 (left of lineout); away backs at ~0.339–0.384 (right). Old range was 0.247–0.302 for everyone.
+- **Lineout column spacing**: LY increased from 0.018 → 0.040 normY so tokens no longer overlap.
+- **Correct jersey compositions**: 5-man uses {4,5,6,8} in line with {1,3,7} in 5m channel; 6+1 adds #7 as floater; 7-man uses full pack.
+- **Defence variants added**: every lineout size and scrum now has a matching defence preset (attacking hooker at TX excluded from count; defending hooker at HX/AX included — correctly asymmetric).
+- **Offside lines enforced**: attack lineout away backs ≥ A_OFF10=0.339; defence lineout home backs ≤ H_OFF10=0.161; scrum backs 5m from hindmost foot (#8).
+- **Preset count**: 12 → 20 presets (lineout-5man/6plus1/7man × atk/def × top/bot; scrum-atk/def × top/bot; kickoff-home/def; penalty-attack; open-play).
+- **41 vitest tests** added in `src/data/formations.test.ts` covering uniqueness, forward counts, offside distances, and ↑/↓ symmetry. `vitest.config.ts` added.
+
+---
+
+### Phase 7 — Broadcast Redesign (Sprint B visual layer)
 
 **Status: In progress on `broadcast-redesign` branch**
 
@@ -219,7 +232,9 @@ Currently actions on actors require selecting them and using the sidebar. A righ
 | `src/app/page.tsx` | Main editor page — assembles TopBar, sidebars, canvas, scene rail |
 | `src/store/useEditorStore.ts` | All app state (Zustand v5) — actors, scenes, tools, playback, palette |
 | `src/types/index.ts` | TypeScript types: Actor, Scene, Arrow, Zone, PitchLayout |
-| `src/data/formations.ts` | All 12 formation presets with accurate rugby positions |
+| `src/data/formations.ts` | All 20 formation presets with correct coordinates, shared helpers (loFwds, chan5m, loSH, homeBackline, awayBackline, bot) |
+| `src/data/formations.test.ts` | 41 vitest tests: uniqueness, forward counts, offside distances, ↑/↓ symmetry |
+| `vitest.config.ts` | vitest config with `@/` path alias |
 | `src/data/iRoster.ts` | Ireland 15-man roster with position/role descriptions |
 | `src/components/editor/canvas/RugbyCanvas.tsx` | Main Konva canvas — pitch, actors, arrows, zones, transitions |
 | `src/components/editor/TopBar.tsx` | Match card, palette swatches, Share/Export buttons |
